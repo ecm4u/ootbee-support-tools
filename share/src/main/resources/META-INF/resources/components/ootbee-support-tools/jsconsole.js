@@ -399,19 +399,35 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
             this.widgets.docsMenuButton.getMenu().setItemGroupTitle('Freemarker', 1);
             this.widgets.docsMenuButton.getMenu().setItemGroupTitle('Lucene', 2);
             this.widgets.docsMenuButton.getMenu().setItemGroupTitle('Webscripts', 3);
-            this.widgets.docsMenuButton.getMenu().cfg.setProperty('zIndex', 2);
+            this.widgets.docsMenuButton.getMenu().cfg.setProperty('zIndex', 10);
+        },
+
+        initSubmenuIds: function JavaScriptConsole_initSubmenuIds(entry, suffix) {
+            if (entry.submenu) {
+                entry.submenu.id = entry.submenu.id + suffix;
+                entry.submenu.itemdata.forEach(function (f) {
+                    this.initSubmenuIds(f, suffix);
+                }.bind(this));
+            }
         },
 
         createOrUpdateScriptsSaveMenu: function JavaScriptConsole_createOrUpdateScriptsSaveMenu(listOfScripts)
         {
-            var saveMenuItems = [{
+            var scripts, saveMenuItems;
+
+            saveMenuItems = [{
                 text: this.msg('button.save.create.new'),
                 value: 'NEW'
             }];
 
             if (listOfScripts)
             {
-                saveMenuItems.push(listOfScripts);
+                scripts = JSON.parse(JSON.stringify(listOfScripts));
+                scripts.forEach(function(e) {
+                    this.initSubmenuIds.call(this, e, "-scriptsave");
+                }.bind(this));
+
+                saveMenuItems.push(scripts);
             }
 
             if (this.widgets.saveMenuButton)
@@ -431,20 +447,27 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
                     container: this.id + '-scriptsave'
                 });
                 this.widgets.saveMenuButton.getMenu().subscribe('click', this.onSaveScriptClick, this);
-                this.widgets.saveMenuButton.getMenu().cfg.setProperty('zIndex', 2);
+                this.widgets.saveMenuButton.getMenu().cfg.setProperty('zIndex', 10);
             }
         },
 
         createOrUpdateScriptsLoadMenu: function JavaScriptConsole_createOrUpdateScriptsLoadMenu(listOfScripts)
         {
-            var loadMenuItems = [{
+            var scripts, loadMenuItems;
+
+            loadMenuItems = [{
                 text: this.msg('button.load.create.new'),
                 value: 'NEW'
             }];
 
             if (listOfScripts)
             {
-                loadMenuItems.push(listOfScripts);
+                scripts = JSON.parse(JSON.stringify(listOfScripts));
+                scripts.forEach(function(e) {
+                    this.initSubmenuIds.call(this, e, "-scriptload");
+                }.bind(this));
+
+                loadMenuItems.push(scripts);
             }
 
             if (this.widgets.loadMenuButton)
@@ -464,7 +487,7 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
                     container: this.id + '-scriptload'
                 });
                 this.widgets.loadMenuButton.getMenu().subscribe('click', this.onLoadScriptClick, this);
-                this.widgets.loadMenuButton.getMenu().cfg.setProperty('zIndex', 2);
+                this.widgets.loadMenuButton.getMenu().cfg.setProperty('zIndex', 10);
             }
         },
 
@@ -517,7 +540,7 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
             }
 
             this.widgets.themeMenuButton.getMenu().subscribe('click', this.onThemeSelection, this);
-            this.widgets.themeMenuButton.getMenu().cfg.setProperty('zIndex', 2);
+            this.widgets.themeMenuButton.getMenu().cfg.setProperty('zIndex', 10);
         },
 
         /**
@@ -539,7 +562,7 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
                 disabled: false
             });
 
-            this.widgets.dumpDisplayMenu.getMenu().cfg.setProperty('zIndex', 2);
+            this.widgets.dumpDisplayMenu.getMenu().cfg.setProperty('zIndex', 10);
             this.widgets.dumpDisplayMenu.on('appendTo', function ()
             {
                 menu = this.getMenu();
@@ -2237,7 +2260,7 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
         saveAsExistingScript: function JavaScriptConsole_saveAsExistingScript(filename, nodeRef)
         {
             Alfresco.util.Ajax.jsonPut({
-                url: Alfresco.constants.PROXY_URI + 'ootbee/jsconsole/savescript.json?name=' + encodeURIComponent(filename) + '&isUpdate=true',
+                url: Alfresco.constants.PROXY_URI + 'ootbee/jsconsole/savescript.json?nodeRef=' + encodeURIComponent(nodeRef),
                 dataObj: {
                     jsScript: this.widgets.codeMirrorScript.getValue(),
                     fmScript: this.widgets.codeMirrorTemplate.getValue()
@@ -2260,7 +2283,7 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
                         {
                             title: this.msg('message.failure'),
                             text: res.json && res.json.message ? res.json.message : this.msg('error.script.save', filename),
-                            zIndex: 5 // added to internal default - high enough offset to ensure it should overlay any part of editor
+                            zIndex: 10 // added to internal default - high enough offset to ensure it should overlay any part of editor
                         });
                         
                     },
@@ -2269,10 +2292,14 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
             });
         },
 
+        /**
+         *
+         * @param filename either file name or path relative from scripts folder
+         */
         saveAsNewScript: function JavaScriptConsole_saveAsNewScript(filename)
         {
             Alfresco.util.Ajax.jsonPut({
-                url: Alfresco.constants.PROXY_URI + 'ootbee/jsconsole/savescript.json?name=' + encodeURIComponent(filename) + '&isUpdate=false',
+                url: Alfresco.constants.PROXY_URI + 'ootbee/jsconsole/savescript.json?namePath=' + encodeURIComponent(filename),
                 dataObj: {
                     jsScript: this.widgets.codeMirrorScript.getValue(),
                     fmScript: this.widgets.codeMirrorTemplate.getValue()
@@ -2295,7 +2322,7 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
                         {
                             title: this.msg('message.failure'),
                             text: res.json && res.json.message ? res.json.message : this.msg('error.script.save', filename),
-                            zIndex: 5 // added to internal default - high enough offset to ensure it should overlay any part of editor
+                            zIndex: 10 // added to internal default - high enough offset to ensure it should overlay any part of editor
                         });
                         
                     },
@@ -2352,7 +2379,8 @@ if (typeof OOTBee === 'undefined' || !OOTBee)
                             this.destroy();
                         },
                         isDefault: true
-                    }]
+                    }],
+                    zIndex: 10 // added to internal default - high enough offset to ensure it should overlay any part of editor
                 });
             }
         },
